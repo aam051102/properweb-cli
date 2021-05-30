@@ -20,8 +20,22 @@ const createTextElement = text => ({
 });
 
 const render = (element, container) => {
-	const dom = element.type === "TEXT_ELEMENT" ? document.createTextNode("") : document.createElement(element.type);
+	let dom;
+	switch (element.type) {
+		case "TEXT_ELEMENT":
+			dom = document.createTextNode("");
+			break;
 
+		case "JSX_FRAG":
+			element.props.children.forEach(child => render(child, container));
+			return;
+
+		default:
+			dom = document.createElement(element.type);
+			break;
+	}
+
+	// Non-frag elements
 	const isProperty = key => key !== "children";
 	Object.keys(element.props)
 		.filter(isProperty)
@@ -31,6 +45,7 @@ const render = (element, container) => {
 
 	element.props.children.forEach(child => render(child, dom));
 	container.appendChild(dom);
+
 };
 
 export { createElement, render };
