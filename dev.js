@@ -111,6 +111,13 @@ const watchHTML = file => {
 
 watcherHTML.on("add", watchHTML);
 watcherHTML.on("change", watchHTML);
+watcherHTML.on("unlink", file => {
+	const outName = outDir + path.basename(file);
+
+	if (fs.existsSync(outName)) {
+		fs.rmSync(outName);
+	}
+});
 
 // JS
 const watchJS = file => {
@@ -119,6 +126,17 @@ const watchJS = file => {
 
 watcherJS.on("add", watchJS);
 watcherJS.on("change", watchJS);
+watcherJS.on("unlink", file => {
+	const outName = `${outDir}assets/js/${path.basename(file, ".jsx")}.js`;
+
+	if (fs.existsSync(outName)) {
+		fs.rmSync(outName);
+	}
+
+	if (fs.existsSync(`${outName}.map`)) {
+		fs.rmSync(`${outName}.map`);
+	}
+});
 
 // SCSS
 const watchSCSS = file => {
@@ -129,6 +147,13 @@ const watchSCSS = file => {
 
 watcherSCSS.on("add", watchSCSS);
 watcherSCSS.on("change", watchSCSS);
+watcherSCSS.on("unlink", file => {
+	const outName = `${outDir}assets/css/${path.basename(file, ".scss")}.css`;
+
+	if (fs.existsSync(outName)) {
+		fs.rmSync(outName);
+	}
+});
 
 // Server
 const express = require("express");
