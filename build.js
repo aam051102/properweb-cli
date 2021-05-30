@@ -53,7 +53,7 @@ const buildJS = (files, out) => {
 		jsxFragment: "\"JSX_FRAG\"",
 		minify: true,
 		keepNames: false,
-		inject: ["./auto.js"],
+		inject: ["./jsx-sub.js"],
 		sourcemap: true,
 		target: ["chrome58", "firefox57", "safari11", "edge16"]
 	})

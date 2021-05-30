@@ -1,3 +1,5 @@
+import "./sub";
+
 document.body.querySelector("button").addEventListener("click", e => {
 	e.preventDefault();
 
