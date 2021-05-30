@@ -1,4 +1,4 @@
-import "./sub";
+import "../partials/sub";
 
 document.body.querySelector("button").addEventListener("click", e => {
 	e.preventDefault();

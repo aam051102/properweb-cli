@@ -3,6 +3,7 @@ const sass = require("sass");
 const minify = require("html-minifier").minify;
 const fs = require("fs");
 const path = require("path");
+const chokidar = require("chokidar");
 
 /**
  * Writes content to filepath and creates directory if it doesn't exist.
@@ -75,9 +76,66 @@ const buildSCSS = (file, out) => {
 	writeToFile(`${outPath}.map`, result.map);
 };
 
-// BUILD
-buildHTML("./src/html/index.html", "./dist/");
-buildJS("./src/js/index.jsx", "./dist/assets/js/");
-buildSCSS("./src/css/index.scss", "./dist/assets/css/");
+// Watching
+const outDir = "./dist/";
 
-// TODO: Watch & automate.
+// Directory structure
+if (!fs.existsSync(`${outDir}assets/js/`)) {
+	fs.mkdirSync(`${outDir}assets/js/`, { recursive: true });
+}
+
+if (!fs.existsSync(`${outDir}assets/css/`)) {
+	fs.mkdirSync(`${outDir}assets/css/`, { recursive: true });
+}
+
+// Watchers
+const watcherHTML = chokidar.watch("./src/html/**/*.html", {
+	persistent: true,
+	ignoreInitial: false
+});
+
+const watcherSCSS = chokidar.watch("./src/css/**/*.scss", {
+	persistent: true,
+	ignoreInitial: false
+});
+
+const watcherJS = chokidar.watch(["./src/js/templates/**/*.js", "./src/js/templates/**/*.jsx"], {
+	persistent: true,
+	ignoreInitial: false
+});
+
+// HTML
+const watchHTML = file => {
+	buildHTML(file, `${outDir}`);
+};
+
+watcherHTML.on("add", watchHTML);
+watcherHTML.on("change", watchHTML);
+
+// JS
+const watchJS = file => {
+	buildJS(file, `${outDir}assets/js/`);
+};
+
+watcherJS.on("add", watchJS);
+watcherJS.on("change", watchJS);
+
+// SCSS
+const watchSCSS = file => {
+	if (!path.basename(file).startsWith("_")) {
+		buildSCSS(file, `${outDir}assets/css/`);
+	}
+};
+
+watcherSCSS.on("add", watchSCSS);
+watcherSCSS.on("change", watchSCSS);
+
+// Server
+const express = require("express");
+const app = express();
+
+app.use("/", express.static(path.join(__dirname, "./dist/")));
+
+app.listen(3000, () => {
+	console.log("Server running on port 3000.");
+});
