@@ -1,0 +1,12 @@
+{
+	"files.eol": "\n",
+	"editor.insertSpaces": false,
+	"eslint.format.enable": true,
+	"editor.defaultFormatter": null,
+	"javascript.preferences.quoteStyle": "double",
+	"typescript.preferences.quoteStyle": "double",
+	"files.exclude": {
+		// The following env files should be hidden to avoid accidental misclicks. If you want to open these files, open them from outside VS Code.
+		".env*.{local,production}": true,
+	}
+}
