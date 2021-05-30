@@ -1,5 +1,9 @@
 import "../partials/sub";
 
+const handleClick = e => {
+	render(<p>Cool, new, component.</p>, e.target);
+};
+
 document.body.querySelector("button").addEventListener("click", e => {
 	e.preventDefault();
 
@@ -9,7 +13,7 @@ document.body.querySelector("button").addEventListener("click", e => {
 				<p>A new component.</p>
 			</li>
 			<li className="test-li-2">
-				<p>A new component 2.</p>
+				<p onClick={handleClick}>A new component 2.</p>
 			</li>
 		</>
 	);

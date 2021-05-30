@@ -39,14 +39,20 @@ const buildHTML = (file, out) => {
 			jsx: "transform",
 			jsxFactory: "createElement",
 			jsxFragment: "\"JSX_FRAG\"",
-			minify: true,
-			keepNames: false,
 			write: false,
-			inject: [ "./jsx-sub.js" ]
+			inject: [ "./jsx-sub.js" ],
+			format: "iife",
+			globalName: "__MODULE"
 		});
 
-		const importData = new Function("doc", new TextDecoder().decode(importContents.outputFiles[0].contents))(new jsdom.JSDOM().window);
-		newContents = newContents.replace(importMatch[0], importData);
+		const localDOM = new jsdom.JSDOM("");
+		const importData = new Function("doc", `${new TextDecoder().decode(importContents.outputFiles[0].contents)};return __MODULE;`)(localDOM.window);
+
+		if (importData) {
+			newContents = newContents.replace(importMatch[0], importData.default);
+		} else {
+			console.error("Module exports were not set.");
+		}
 	}
 
 	// Process HTML

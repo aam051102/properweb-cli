@@ -48,7 +48,14 @@ const render = (element, container) => {
 	Object.keys(element.props)
 		.filter(isProperty)
 		.forEach(name => {
-			dom[name] = element.props[name];
+			if (name.startsWith("on")) {
+				let eventName = name.substr(3); // Remove "on"
+				eventName = name[2].toLowerCase() + eventName; // Make first character lowercase
+
+				dom.addEventListener(eventName, element.props[name]);
+			} else {
+				dom[name] = element.props[name];
+			}
 		});
 
 	element.props.children.forEach(child => render(child, dom));
