@@ -33,7 +33,7 @@
 		"React": "writable",
 		"render": "readonly",
 		"createElement": "readonly",
-		"createTextElement": "readonly",
+		"renderToString": "readonly"
 	},
 	"rules": {
 		"no-async-promise-executor": "off",
@@ -87,8 +87,8 @@
 			"consistent"
 		],
 		"array-bracket-spacing": [
-			"error",
-			"never"
+			"warn",
+			"always"
 		],
 		"array-element-newline": [
 			"error",
@@ -187,7 +187,7 @@
 				"maxBOF": 0
 			}
 		],
-		"no-negated-condition": "error",
+		"no-negated-condition": "off",
 		"no-new-object": "error",
 		"no-trailing-spaces": [
 			"warn",

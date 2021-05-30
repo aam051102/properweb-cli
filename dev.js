@@ -21,10 +21,38 @@ const writeToFile = (file, content) => {
 };
 
 // HTML
+const jsdom = require("jsdom");
+
 const buildHTML = (file, out) => {
-	const result = minify(fs.readFileSync(file, {
+	const contents = fs.readFileSync(file, {
 		encoding: "utf-8"
-	}), {
+	});
+
+	const importRegex = /<link +rel="import" *href="(.+\.jsx)" *\/?>/g;
+
+	let newContents = contents;
+	let importMatch;
+	while (importMatch = importRegex.exec(contents)) {
+		const importContents = esbuild.buildSync({
+			entryPoints: [ path.resolve(path.dirname(file), importMatch[1]) ],
+			jsx: "transform",
+			jsxFactory: "createElement",
+			jsxFragment: "\"JSX_FRAG\"",
+			minify: true,
+			keepNames: false,
+			write: false,
+			inject: [ "./jsx-sub.js" ]
+		});
+
+		for (const out of importContents.outputFiles) {
+			const localDOM = new jsdom.JSDOM("");
+
+			const importData = new Function("doc", new TextDecoder().decode(out.contents))(localDOM.window);
+			newContents = newContents.replace(importMatch[0], importData);
+		}
+	}
+
+	const result = minify(newContents, {
 		minifyCSS: true,
 		minifyJS: true,
 		minifyURLs: true,
@@ -42,7 +70,7 @@ const buildHTML = (file, out) => {
 // JS
 const buildJS = (files, out) => {
 	if (typeof files === "string") {
-		files = [files];
+		files = [ files ];
 	}
 
 	esbuild.build({
@@ -54,9 +82,9 @@ const buildJS = (files, out) => {
 		jsxFragment: "\"JSX_FRAG\"",
 		minify: true,
 		keepNames: false,
-		inject: ["./jsx-sub.js"],
+		inject: [ "./jsx-sub.js" ],
 		sourcemap: true,
-		target: ["chrome58", "firefox57", "safari11", "edge16"]
+		target: [ "chrome58", "firefox57", "safari11", "edge16" ]
 	})
 		.catch(console.error);
 };
@@ -99,7 +127,7 @@ const watcherSCSS = chokidar.watch("./src/css/**/*.scss", {
 	ignoreInitial: false
 });
 
-const watcherJS = chokidar.watch(["./src/js/templates/**/*.js", "./src/js/templates/**/*.jsx"], {
+const watcherJS = chokidar.watch([ "./src/js/templates/**/*.js", "./src/js/templates/**/*.jsx" ], {
 	persistent: true,
 	ignoreInitial: false
 });
