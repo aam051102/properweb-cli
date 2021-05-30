@@ -4,12 +4,10 @@ Original: https://pomb.us/build-your-own-react/
 
 let docLocale;
 
-if (typeof document !== "undefined") {
-	docLocale = document;
-} else if (typeof doc !== "undefined" && typeof doc.document !== "undefined") {
+if (typeof doc !== "undefined" && typeof doc.document !== "undefined") {
 	docLocale = doc.document;
 } else {
-	throw new Error("Something is seriously wrong");
+	docLocale = document;
 }
 
 const createElement = (type, props, ...children) => ({

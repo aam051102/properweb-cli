@@ -28,13 +28,14 @@ const buildHTML = (file, out) => {
 		encoding: "utf-8"
 	});
 
+	// Build HTML/JSX modules
 	const importRegex = /<link +rel="import" *href="(.+\.jsx)" *\/?>/g;
-
 	let newContents = contents;
 	let importMatch;
 	while (importMatch = importRegex.exec(contents)) {
 		const importContents = esbuild.buildSync({
 			entryPoints: [ path.resolve(path.dirname(file), importMatch[1]) ],
+			bundle: true,
 			jsx: "transform",
 			jsxFactory: "createElement",
 			jsxFragment: "\"JSX_FRAG\"",
@@ -44,14 +45,11 @@ const buildHTML = (file, out) => {
 			inject: [ "./jsx-sub.js" ]
 		});
 
-		for (const out of importContents.outputFiles) {
-			const localDOM = new jsdom.JSDOM("");
-
-			const importData = new Function("doc", new TextDecoder().decode(out.contents))(localDOM.window);
-			newContents = newContents.replace(importMatch[0], importData);
-		}
+		const importData = new Function("doc", new TextDecoder().decode(importContents.outputFiles[0].contents))(new jsdom.JSDOM().window);
+		newContents = newContents.replace(importMatch[0], importData);
 	}
 
+	// Process HTML
 	const result = minify(newContents, {
 		minifyCSS: true,
 		minifyJS: true,
@@ -65,16 +63,14 @@ const buildHTML = (file, out) => {
 	});
 
 	writeToFile(out + path.basename(file), result);
+
+	console.log(`Built ${file}`);
 };
 
 // JS
-const buildJS = (files, out) => {
-	if (typeof files === "string") {
-		files = [ files ];
-	}
-
-	esbuild.build({
-		entryPoints: files,
+const buildJS = (file, out) => {
+	esbuild.buildSync({
+		entryPoints: [ file ],
 		bundle: true,
 		outdir: out,
 		jsx: "transform",
@@ -85,8 +81,9 @@ const buildJS = (files, out) => {
 		inject: [ "./jsx-sub.js" ],
 		sourcemap: true,
 		target: [ "chrome58", "firefox57", "safari11", "edge16" ]
-	})
-		.catch(console.error);
+	});
+
+	console.log(`Built ${file}`);
 };
 
 // SCSS
@@ -102,6 +99,8 @@ const buildSCSS = (file, out) => {
 
 	writeToFile(outPath, result.css);
 	writeToFile(`${outPath}.map`, result.map);
+
+	console.log(`Built ${file}`);
 };
 
 // Watching
