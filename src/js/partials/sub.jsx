@@ -1,11 +1,14 @@
+import JSX from "jsx-sub";
+import "src/js/partials/sub2";
+
 document.body.querySelector("ul").addEventListener("click", e => {
-	e.preventDefault();
+    e.preventDefault();
 
-	const component = (
-		<li className="test-li">
-			<p>A new component.</p>
-		</li>
-	);
+    const component = (
+        <p>A new component.</p>
+    );
 
-	render(component, document.body);
+    JSX.render(component, document.body);
 });
+
+console.log("Sub loaded");

@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"rootDir": ".",
+		"outDir": "./dist",
+		"jsx": "preserve",
+		"lib": [
+			"DOM",
+			"DOM.Iterable",
+			"ESNext",
+		],
+		"noImplicitAny": false
+	},
+	"include": [
+		"./src/**/*.js",
+		"./src/**/*.jsx",
+	],
+	"exclude": [
+		"node_modules",
+		"./dist"
+	]
+}
