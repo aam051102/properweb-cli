@@ -11,4 +11,5 @@ The (opinionated) proper way to develop websites. Tired of typing long, complex 
 - Write HTML templates with JSX.
 
 ## TODO
+- Add JQuery-to-JS transpiler.
 - Add TypeScript support.

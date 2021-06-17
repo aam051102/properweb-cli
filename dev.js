@@ -72,32 +72,38 @@ const buildHTML = (file, out) => {
 };
 
 // JS
+// const JSInputs = {};
 const JSImports = {};
 
 const linkJSImportsRecursive = (inputs, file) => {
     let imports = [];
 
+    // TODO: Set up changes in imports after initial import load.
+
     // TODO: Fix updating multiple times from several levels of imports.
-    // TODO: Set up removal of imports
     // TODO: How to handle linking into oneself?
     
     inputs[file].imports.forEach((importInfo) => {
         const importPath = importInfo.path;
 
-        if (JSImports[importPath]) {
+        /*if (JSImports[importPath]) {
             // Don't link, but send data on
             imports = imports.concat(JSImports[importPath].imports);
             JSImports[importPath].exports[file] = true;
             return;
-        }
+        }*/
 
         // Proceed to link imports of existing import
         imports.push(importPath);
         const importData = imports.concat(linkJSImportsRecursive(inputs, importPath));
-        JSImports[importPath] = {
+        /*JSImports[importPath] = {
             imports: importData,
             exports: {}
-        };
+        };*/
+        JSImports[importPath] = {};
+        if (!JSImports[importPath].exports) {
+            JSImports[importPath].exports = {};
+        }
         JSImports[importPath].exports[file] = true;
         imports = importData;
     });
@@ -106,6 +112,7 @@ const linkJSImportsRecursive = (inputs, file) => {
 };
 
 const buildJS = (file, out) => {
+    // Build
     const data = esbuild.buildSync({
         entryPoints: [file],
         bundle: true,
@@ -125,13 +132,70 @@ const buildJS = (file, out) => {
         ],
         metafile: true
     });
-    
-    linkJSImportsRecursive(data.metafile.inputs, file);
+
+    const metafileInputs = data.metafile.inputs;
+    /*const JSInput = JSInputs[file];
+    if (JSInput) {
+        console.log(metafileInputs);
+
+        // Compare saved inputs with current inputs
+        let changeFound = false;
+
+        inputsLoop:
+        for (const fileInfo in metafileInputs) {
+            // Quick check for one-use imports.
+            if (JSInput[fileInfo]) {
+                const savedImports = JSInput[fileInfo].imports;
+                const metafileImports = metafileInputs[fileInfo].imports;
+
+                // Quick length comparison.
+                if (savedImports.length !== metafileImports.length) {
+                    changeFound = true;
+                    break inputsLoop;
+                }
+
+                // Deeper, manual check.
+                for (let i = 0; i < metafileImports.length; i++) {
+                    if (savedImports[i] !== metafileImports[i]) {
+                        changeFound = true;
+                        break inputsLoop;
+                    }
+                }
+            } else {
+                changeFound = true;
+                break inputsLoop;
+            }
+        }
+
+        if (changeFound) {
+            // Force import relink.
+            JSInputs[file] = metafileInputs;
+            delete JSImports[file];
+        }
+    } else {
+        JSInputs[file] = metafileInputs;
+    }*/
+
+    // Link imports
+    linkJSImportsRecursive(metafileInputs, file);
 
     console.log(`Built ${file}`);
 };
 
 // SCSS
+const CSSImports = {};
+
+const linkCSSImports = (inputs, file) => {   
+    inputs.forEach((importPath) => {
+        // Proceed to link imports of existing import
+        CSSImports[importPath] = {};
+        if (!CSSImports[importPath].exports) {
+            CSSImports[importPath].exports = {};
+        }
+        CSSImports[importPath].exports[file] = true;
+    });
+};
+
 const buildSCSS = (file, out) => {
     const outPath = `${out + path.basename(file, ".scss")}.css`;
 
@@ -141,6 +205,10 @@ const buildSCSS = (file, out) => {
         outFile: outPath,
         outputStyle: "compressed"
     });
+
+    //console.log(result.stats.includedFiles); // Use this property to cover import/export updates in the EXACT same way as with JSX.
+
+    linkCSSImports(result.stats.includedFiles, file);
 
     writeToFile(outPath, result.css);
     writeToFile(`${outPath}.map`, result.map);
@@ -192,7 +260,7 @@ watcherHTML.on("unlink", file => {
 });
 
 // JS
-const watchJS = file => {
+const watchJS = (file) => {
     const fileName = file.replace(/\\/g, "/"); // Fix for ESBuild oddity.
 
     if (fileName.startsWith(`src/js/scripts`)) {
@@ -207,6 +275,7 @@ const watchJS = file => {
 watcherJS.on("add", watchJS);
 watcherJS.on("change", watchJS);
 watcherJS.on("unlink", file => {
+    // Remove output files
     const outName = `${outDir}assets/js/${path.basename(file, ".jsx")}.js`;
 
     if (fs.existsSync(outName)) {
@@ -220,8 +289,14 @@ watcherJS.on("unlink", file => {
 
 // SCSS
 const watchSCSS = file => {
+    const filePath = path.resolve(file);
+
     if (!path.basename(file).startsWith("_")) {
         buildSCSS(file, `${outDir}assets/css/`);
+    } else if (CSSImports[filePath]) {
+        for (const exportFile in CSSImports[filePath].exports) {
+            watchSCSS(exportFile);
+        }
     }
 };
 
