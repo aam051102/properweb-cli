@@ -4,7 +4,6 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "watch": "node index.js",
         "build": "node index.js"
     },
     "keywords": [],
@@ -22,6 +21,7 @@
         "express": "^4.17.1",
         "html-minifier": "^4.0.0",
         "jsdom": "^16.6.0",
+        "sade": "^1.7.4",
         "sass": "^1.34.0",
         "typescript": "^4.3.2"
     }
