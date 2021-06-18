@@ -2,14 +2,13 @@
 Original: https://pomb.us/build-your-own-react/
 */
 
-let docLocale;
-
-if (typeof doc !== "undefined" && typeof doc.document !== "undefined") {
-    docLocale = doc.document;
-} else {
-    docLocale = document;
-}
-
+/**
+ * Creates a new element of a type with props.
+ * @param {*} type 
+ * @param {*} props 
+ * @param  {...any} children 
+ * @returns 
+ */
 const createElement = (type, props, ...children) => ({
     type,
     props: {
@@ -19,6 +18,11 @@ const createElement = (type, props, ...children) => ({
     }
 });
 
+/**
+ * Creates a text element.
+ * @param {string} text 
+ * @returns 
+ */
 const createTextElement = text => ({
     type: "TEXT_ELEMENT",
     props: {
@@ -27,11 +31,17 @@ const createTextElement = text => ({
     }
 });
 
+/**
+ * Renders HTML elements to the DOM.
+ * @param {*} element 
+ * @param {*} container 
+ * @returns 
+ */
 const render = (element, container) => {
     let dom;
     switch (element.type) {
         case "TEXT_ELEMENT":
-            dom = docLocale.createTextNode("");
+            dom = document.createTextNode("");
             break;
 
         case "JSX_FRAG":
@@ -39,7 +49,7 @@ const render = (element, container) => {
             return;
 
         default:
-            dom = docLocale.createElement(element.type);
+            dom = document.createElement(element.type);
             break;
     }
 
@@ -62,11 +72,17 @@ const render = (element, container) => {
     container.appendChild(dom);
 };
 
+/**
+ * Renders HTML elements to a string.
+ * @param {*} element 
+ * @param {*} container 
+ * @returns 
+ */
 const renderToString = (element, container) => {
     let dom;
     switch (element.type) {
         case "TEXT_ELEMENT":
-            dom = docLocale.createTextNode("");
+            dom = document.createTextNode("");
             break;
 
         case "JSX_FRAG":
@@ -74,7 +90,7 @@ const renderToString = (element, container) => {
             return;
 
         default:
-            dom = docLocale.createElement(element.type);
+            dom = document.createElement(element.type);
             break;
     }
 

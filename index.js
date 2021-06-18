@@ -44,7 +44,8 @@ const buildHTML = (file, out) => {
         });
 
         const localDOM = new jsdom.JSDOM("");
-        const importData = new Function("doc", `${new TextDecoder().decode(importContents.outputFiles[0].contents)};return __MODULE;`)(localDOM.window);
+        const buildResult = new TextDecoder().decode(importContents.outputFiles[0].contents);
+        const importData = new Function("document", `${buildResult};return __MODULE;`)(localDOM.window.document);
 
         if (importData) {
             newContents = newContents.replace(importMatch[0], importData.default);
@@ -78,9 +79,9 @@ const JSImports = {};
 const linkJSImportsRecursive = (inputs, file) => {
     let imports = [];
 
-    // TODO: Set up changes in imports after initial import load.
-
     // TODO: Fix updating multiple times from several levels of imports.
+
+    // TODO: Set up changes in imports after initial import load.
     // TODO: How to handle linking into oneself?
     
     inputs[file].imports.forEach((importInfo) => {

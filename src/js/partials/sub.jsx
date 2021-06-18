@@ -1,4 +1,4 @@
-import JSX from "jsx-sub";
+import JSX from "jsx";
 import "src/js/partials/sub2";
 
 document.body.querySelector("ul").addEventListener("click", e => {
