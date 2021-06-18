@@ -229,7 +229,7 @@ const watchHTML = file => {
 const watchJS = (file) => {
     const fileName = file.replace(/\\/g, "/"); // Fix for ESBuild oddity.
 
-    if (fileName.startsWith(`src/js/scripts`)) {
+    if (fileName.startsWith("src/js/scripts")) {
         buildJS(fileName, `${outDir}assets/js/`);
     } else if (JSImports[fileName]) {
         for (const exportFile in JSImports[fileName].exports) {
