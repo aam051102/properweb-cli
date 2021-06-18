@@ -220,45 +220,10 @@ const buildSCSS = (file, out) => {
 // Watching
 const outDir = "./dist/";
 
-// Directory structure
-if (!fs.existsSync(`${outDir}assets/js/`)) {
-    fs.mkdirSync(`${outDir}assets/js/`, { recursive: true });
-}
-
-if (!fs.existsSync(`${outDir}assets/css/`)) {
-    fs.mkdirSync(`${outDir}assets/css/`, { recursive: true });
-}
-
-// Watchers
-const watcherHTML = chokidar.watch("./src/html/**/*.html", {
-    persistent: true,
-    ignoreInitial: false
-});
-
-const watcherSCSS = chokidar.watch("./src/css/**/*.scss", {
-    persistent: true,
-    ignoreInitial: false
-});
-
-const watcherJS = chokidar.watch(["./src/js/**/*.js", "./src/js/**/*.jsx"], {
-    persistent: true,
-    ignoreInitial: false
-});
-
 // HTML
 const watchHTML = file => {
     buildHTML(file, `${outDir}`);
 };
-
-watcherHTML.on("add", watchHTML);
-watcherHTML.on("change", watchHTML);
-watcherHTML.on("unlink", file => {
-    const outName = outDir + path.basename(file);
-
-    if (fs.existsSync(outName)) {
-        fs.rmSync(outName);
-    }
-});
 
 // JS
 const watchJS = (file) => {
@@ -273,21 +238,6 @@ const watchJS = (file) => {
     }
 };
 
-watcherJS.on("add", watchJS);
-watcherJS.on("change", watchJS);
-watcherJS.on("unlink", file => {
-    // Remove output files
-    const outName = `${outDir}assets/js/${path.basename(file, ".jsx")}.js`;
-
-    if (fs.existsSync(outName)) {
-        fs.rmSync(outName);
-    }
-
-    if (fs.existsSync(`${outName}.map`)) {
-        fs.rmSync(`${outName}.map`);
-    }
-});
-
 // SCSS
 const watchSCSS = file => {
     const filePath = path.resolve(file);
@@ -301,22 +251,83 @@ const watchSCSS = file => {
     }
 };
 
-watcherSCSS.on("add", watchSCSS);
-watcherSCSS.on("change", watchSCSS);
-watcherSCSS.on("unlink", file => {
-    const outName = `${outDir}assets/css/${path.basename(file, ".scss")}.css`;
-
-    if (fs.existsSync(outName)) {
-        fs.rmSync(outName);
+const createDirStructure = () => {
+    // Directory structure
+    if (!fs.existsSync(`${outDir}assets/js/`)) {
+        fs.mkdirSync(`${outDir}assets/js/`, { recursive: true });
     }
-});
 
-// Server
-const express = require("express");
-const app = express();
+    if (!fs.existsSync(`${outDir}assets/css/`)) {
+        fs.mkdirSync(`${outDir}assets/css/`, { recursive: true });
+    }
+};
 
-app.use("/", express.static(path.join(__dirname, "./dist/")));
+const command = () => {
+    createDirStructure();
 
-app.listen(3000, () => {
-    console.log("Server running on port 3000.");
-});
+    // Watchers
+    const watcherHTML = chokidar.watch("./src/html/**/*.html", {
+        persistent: true,
+        ignoreInitial: false
+    });
+	
+    const watcherSCSS = chokidar.watch("./src/css/**/*.scss", {
+        persistent: true,
+        ignoreInitial: false
+    });
+	
+    const watcherJS = chokidar.watch(["./src/js/**/*.js", "./src/js/**/*.jsx"], {
+        persistent: true,
+        ignoreInitial: false
+    });
+
+    // Watch HTML
+    watcherHTML.on("add", watchHTML);
+    watcherHTML.on("change", watchHTML);
+    watcherHTML.on("unlink", file => {
+        const outName = outDir + path.basename(file);
+
+        if (fs.existsSync(outName)) {
+            fs.rmSync(outName);
+        }
+    });
+
+    // Watch JS
+    watcherJS.on("add", watchJS);
+    watcherJS.on("change", watchJS);
+    watcherJS.on("unlink", file => {
+    // Remove output files
+        const outName = `${outDir}assets/js/${path.basename(file, ".jsx")}.js`;
+
+        if (fs.existsSync(outName)) {
+            fs.rmSync(outName);
+        }
+
+        if (fs.existsSync(`${outName}.map`)) {
+            fs.rmSync(`${outName}.map`);
+        }
+    });
+
+    // Watch SCSS
+    watcherSCSS.on("add", watchSCSS);
+    watcherSCSS.on("change", watchSCSS);
+    watcherSCSS.on("unlink", file => {
+        const outName = `${outDir}assets/css/${path.basename(file, ".scss")}.css`;
+
+        if (fs.existsSync(outName)) {
+            fs.rmSync(outName);
+        }
+    });
+
+    // Server
+    const express = require("express");
+    const app = express();
+
+    app.use("/", express.static(path.join(__dirname, "./dist/")));
+
+    app.listen(3000, () => {
+        console.log("Server running on port 3000.");
+    });
+};
+
+export { command };

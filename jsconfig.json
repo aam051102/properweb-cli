@@ -3,7 +3,6 @@
 		"baseUrl": ".",
 		"rootDir": ".",
 		"outDir": "./dist",
-		"jsx": "preserve",
 		"lib": [
 			"DOM",
 			"DOM.Iterable",
@@ -12,8 +11,7 @@
 		"noImplicitAny": false
 	},
 	"include": [
-		"./src/**/*.js",
-		"./src/**/*.jsx",
+		"./**/*.js",
 	],
 	"exclude": [
 		"node_modules",

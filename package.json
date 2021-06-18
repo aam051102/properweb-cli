@@ -2,10 +2,11 @@
     "name": "properweb",
     "version": "1.0.0",
     "description": "",
-    "main": "index.js",
-    "scripts": {
-        "build": "node index.js"
+    "main": "cli/index.js",
+    "bin": {
+        "proper": "cli/index.js"
     },
+    "scripts": {},
     "keywords": [],
     "author": "",
     "license": "ISC",
