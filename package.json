@@ -1,14 +1,12 @@
 {
-    "name": "properweb",
+    "name": "properweb-cli",
     "version": "1.0.1",
     "description": "",
     "main": "./cli/index.js",
     "bin": {
         "proper": "./cli/index.js"
     },
-    "scripts": {
-        "test": "proper build"
-    },
+    "scripts": {},
     "keywords": [],
     "author": "",
     "license": "ISC",
