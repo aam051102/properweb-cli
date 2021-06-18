@@ -1,10 +1,10 @@
-import { command as watch } from "./watch";
+const { command: watch } = require("./watch");
 
 const build = () => {
 
 };
 
-export default {
+module.exports = {
     build,
     watch 
 };

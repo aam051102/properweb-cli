@@ -2,15 +2,19 @@
     "name": "properweb",
     "version": "1.0.0",
     "description": "",
-    "main": "cli/index.js",
+    "main": "./cli/index.js",
     "bin": {
-        "proper": "cli/index.js"
+        "proper": "./cli/index.js"
     },
-    "scripts": {},
+    "scripts": {
+        "test": "proper build"
+    },
     "keywords": [],
     "author": "",
     "license": "ISC",
-    "dependencies": {},
+    "dependencies": {
+        "sade": "^1.7.4"
+    },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^4.25.0",
         "@typescript-eslint/parser": "^4.25.0",
@@ -22,7 +26,6 @@
         "express": "^4.17.1",
         "html-minifier": "^4.0.0",
         "jsdom": "^16.6.0",
-        "sade": "^1.7.4",
         "sass": "^1.34.0",
         "typescript": "^4.3.2"
     }

@@ -121,6 +121,7 @@
         "array-element-newline" : [ "warn", { "minItems": 3 } ],
         "array-bracket-newline": [ "warn", { "minItems": 3 } ],
         "array-bracket-spacing": [ "warn", "never"],
-        "multiline-ternary": ["warn", "never"]
+        "multiline-ternary": ["warn", "never"],
+        "quotes": [ "warn", "double" ]
 	}
 }

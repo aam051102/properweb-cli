@@ -330,4 +330,4 @@ const command = () => {
     });
 };
 
-export { command };
+module.exports = { command };
