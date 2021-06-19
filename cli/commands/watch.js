@@ -26,8 +26,10 @@ const writeToFile = (file, content) => {
  * @param {string} src 
  * @param {string} dist 
  */
-const command = (src, argv) => {
-    let { dist } = argv;
+const command = (argv) => {
+    let {
+        src, dist 
+    } = argv;
 
     if (src) src = path.join(process.cwd(), src);
     if (dist) dist = path.join(process.cwd(), dist);
@@ -42,7 +44,7 @@ const command = (src, argv) => {
     }
 
     // HTML
-    const buildHTML = (file, out) => {
+    const buildHTML = (file) => {
         const contents = fs.readFileSync(file, { encoding: "utf-8" });
 
         // Build HTML/JSX modules
@@ -86,13 +88,13 @@ const command = (src, argv) => {
             removeComments: true
         });
 
-        writeToFile(out + path.basename(file), result);
+        writeToFile(path.join(dist, path.basename(file)), result);
 
         console.log(`Built "${file}"`);
     };
 
     const watchHTML = (file) => {
-        buildHTML(file, dist);
+        buildHTML(file);
     };
 
     // JS
@@ -123,12 +125,12 @@ const command = (src, argv) => {
         return imports;
     };
 
-    const buildJS = (file, out) => {
+    const buildJS = (file) => {
         // Build
         const data = esbuild.buildSync({
             entryPoints: [file],
             bundle: true,
-            outdir: out,
+            outdir: path.join(dist, "assets/js/"),
             jsx: "transform",
             jsxFactory: "JSX.createElement",
             jsxFragment: "JSX.fragment",
@@ -154,10 +156,10 @@ const command = (src, argv) => {
     };
 
     const watchJS = (file) => {
-        const fileName = file.replace(/\\/g, "/"); // Fix for ESBuild oddity.
+        const fileName = path.relative(process.cwd(), file).replace(/\\/g, "/"); // Fix for ESBuild oddity.
 
         if (fileName.includes("js/scripts")) {
-            buildJS(fileName, path.join(dist, "assets/js/"));
+            buildJS(fileName);
         } else if (JSImports[fileName]) {
             for (const exportFile in JSImports[fileName].exports) {
                 watchJS(exportFile);
@@ -181,8 +183,8 @@ const command = (src, argv) => {
         });
     };
 
-    const buildCSS = (file, out) => {
-        const outPath = `${out + path.basename(file, ".scss")}.css`;
+    const buildCSS = (file) => {
+        const outPath = path.join(dist, "assets/css/", path.basename(file, ".scss"), ".css");
 
         const result = sass.renderSync({
             file,
@@ -203,7 +205,7 @@ const command = (src, argv) => {
         const filePath = path.resolve(file);
 
         if (!path.basename(file).startsWith("_")) {
-            buildCSS(file, path.join(dist, "assets/css/"));
+            buildCSS(file);
         } else if (CSSImports[filePath]) {
             for (const exportFile in CSSImports[filePath].exports) {
                 watchCSS(exportFile);

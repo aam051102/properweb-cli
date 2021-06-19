@@ -12,7 +12,7 @@ buildCommand.action(commands.build);
 
 // Watch command
 const watchCommand = prog
-    .command("watch [src]")
+    .command("watch")
     .describe("Watch files for changes.");
 
 commands.watchOptions.forEach((option) => {
