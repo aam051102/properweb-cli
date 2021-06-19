@@ -156,6 +156,7 @@ const command = (argv) => {
     };
 
     const watchJS = (file) => {
+        // TODO: Move this to be general. No need for full paths on the other files.
         const fileName = path.relative(process.cwd(), file).replace(/\\/g, "/"); // Fix for ESBuild oddity.
 
         if (fileName.includes("js/scripts")) {
@@ -184,7 +185,7 @@ const command = (argv) => {
     };
 
     const buildCSS = (file) => {
-        const outPath = path.join(dist, "assets/css/", path.basename(file, ".scss"), ".css");
+        const outPath = path.join(dist, `assets/css/${path.basename(file, ".scss")}.css`);
 
         const result = sass.renderSync({
             file,
