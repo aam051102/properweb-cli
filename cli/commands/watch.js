@@ -119,9 +119,6 @@ const command = (argv) => {
     const linkJSImportsRecursive = (inputs, file) => {
         let imports = [];
 
-        // TODO: Fix updating multiple times from several levels of imports.
-
-        // TODO: Set up changes in imports after initial import load.
         // TODO: How to handle linking into oneself?
     
         inputs[file].imports.forEach((importInfo) => {
@@ -180,7 +177,6 @@ const command = (argv) => {
         if (fileName.includes("js/scripts")) {
             buildJS(fileName);
         } else if (JSImports[fileName]) {
-            console.log(JSImports[fileName].exports);
             for (const exportFile in JSImports[fileName].exports) {
                 watchJS(exportFile);
             }
