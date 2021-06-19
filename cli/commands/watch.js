@@ -5,6 +5,7 @@ const esbuild = require("esbuild");
 const sass = require("sass");
 const minify = require("html-minifier").minify;
 const jsdom = require("jsdom");
+const { parse: parseHTML } = require("node-html-parser");
 
 /**
  * Writes content to filepath and creates directory if it doesn't exist.
@@ -46,16 +47,22 @@ const command = (argv) => {
     }
 
     // HTML
+    // TODO: Register and link HTML imports.
+
+    /**
+     * Builds HTML file.
+     * @param {*} file 
+     */
     const buildHTML = (file) => {
         const contents = fs.readFileSync(file, { encoding: "utf-8" });
 
-        // Build HTML/JSX modules
-        const importRegex = /<link +rel="import" *href="(.+\.jsx)" *\/?>/g;
-        let newContents = contents;
-        let importMatch;
-        while ((importMatch = importRegex.exec(contents))) {
+        const root = parseHTML(contents);
+
+        root.querySelectorAll("link[rel=\"import\"]").forEach((element) => {
+            const importLink = element.getAttribute("href");
+
             const importContents = esbuild.buildSync({
-                entryPoints: [path.resolve(path.dirname(file), importMatch[1])],
+                entryPoints: [path.resolve(path.dirname(file), importLink)],
                 bundle: true,
                 jsx: "transform",
                 jsxFactory: "JSX.createElement",
@@ -66,19 +73,29 @@ const command = (argv) => {
                 globalName: "__MODULE"
             });
 
+            // Get dataset
+            const dataset = {};
+            for (const attr in element.attributes) {
+                if (attr.startsWith("data-")) {
+                    dataset[attr.substr("data-".length)] = element.getAttribute(attr);
+                }
+            }
+
+            // TODO: Find a way to send element data/args to import.
+            // TODO: This is too much of a workaround. Find a better solution.
             const localDOM = new jsdom.JSDOM("");
             const buildResult = new TextDecoder().decode(importContents.outputFiles[0].contents);
             const importData = new Function("document", `${buildResult};return __MODULE;`)(localDOM.window.document);
 
             if (importData) {
-                newContents = newContents.replace(importMatch[0], importData.default);
+                element.replaceWith(importData.default);
             } else {
                 console.error("Module exports were not set.");
             }
-        }
+        });
 
         // Process HTML
-        const result = minify(newContents, {
+        const result = minify(root.toString(), {
             minifyCSS: true,
             minifyJS: true,
             minifyURLs: true,
@@ -95,7 +112,19 @@ const command = (argv) => {
         console.log(`Built "${file}"`);
     };
 
-    const watchHTML = (file) => {
+    /**
+     * Handles new HTML files.
+     * @param {*} file 
+     */
+    const handleAddHTML = (file) => {
+        buildHTML(file);
+    };
+
+    /**
+     * Handles HTML file changes.
+     * @param {*} file 
+     */
+    const handleChangeHTML = (file) => {
         buildHTML(file);
     };
 
@@ -103,8 +132,8 @@ const command = (argv) => {
         persistent: true,
         ignoreInitial: false
     })
-        .on("add", watchHTML)
-        .on("change", watchHTML)
+        .on("add", handleAddHTML)
+        .on("change", handleChangeHTML)
         .on("unlink", file => {
             const outName = path.join(dist, path.basename(file));
 
@@ -116,6 +145,12 @@ const command = (argv) => {
     // JS
     const JSImports = {};
 
+    /**
+     * Recursively links JavaScript dependencies to their dependants.
+     * @param {*} inputs 
+     * @param {*} file 
+     * @returns 
+     */
     const linkJSImportsRecursive = (inputs, file) => {
         let imports = [];
 
@@ -138,6 +173,10 @@ const command = (argv) => {
         return imports;
     };
 
+    /**
+     * Builds JavaScript file.
+     * @param {*} file 
+     */
     const buildJS = (file) => {
         // Build
         const data = esbuild.buildSync({
@@ -168,16 +207,31 @@ const command = (argv) => {
         console.log(`Built "${file}"`);
     };
 
-    const watchJS = (file) => {
-        // TODO: Move this to be general. No need for full paths on the other files.
+    // TODO: Move file name change to be general. No need for full paths on the other files.
+    /**
+     * Handles new JavaScript files.
+     * @param {*} file 
+     */
+    const handleAddJS = (file) => {
+        const fileName = path.relative(process.cwd(), file).replace(/\\/g, "/"); // Fix for ESBuild oddity.
 
+        if (fileName.includes("js/scripts")) {
+            buildJS(fileName);
+        }
+    };
+
+    /**
+     * Handles JavaScript file changes.
+     * @param {*} file 
+     */
+    const handleChangeJS = (file) => {
         const fileName = path.relative(process.cwd(), file).replace(/\\/g, "/"); // Fix for ESBuild oddity.
 
         if (fileName.includes("js/scripts")) {
             buildJS(fileName);
         } else if (JSImports[fileName]) {
             for (const exportFile in JSImports[fileName].exports) {
-                watchJS(exportFile);
+                handleChangeJS(exportFile);
             }
         }
     };
@@ -186,8 +240,8 @@ const command = (argv) => {
         persistent: true,
         ignoreInitial: false
     })
-        .on("add", watchJS)
-        .on("change", watchJS)
+        .on("add", handleAddJS)
+        .on("change", handleChangeJS)
         .on("unlink", file => {
             // Remove output files
             const outName = path.join(dist, `assets/js/${path.basename(file, ".jsx")}.js`);
@@ -204,6 +258,11 @@ const command = (argv) => {
     // CSS
     const CSSImports = {};
 
+    /**
+     * Links SCSS dependencies with their dependants.
+     * @param {*} inputs 
+     * @param {*} file 
+     */
     const linkCSSImports = (inputs, file) => {   
         inputs.forEach((importPath) => {
             // Proceed to link imports of existing import
@@ -217,6 +276,10 @@ const command = (argv) => {
         });
     };
 
+    /**
+     * Builds CSS file.
+     * @param {*} file 
+     */
     const buildCSS = (file) => {
         const outPath = path.join(dist, `assets/css/${path.basename(file, ".scss")}.css`);
 
@@ -235,14 +298,28 @@ const command = (argv) => {
         console.log(`Built "${file}"`);
     };
 
-    const watchCSS = (file) => {
+    /**
+     * Handles new CSS files.
+     * @param {*} file 
+     */
+    const handleAddCSS = (file) => {
+        if (!path.basename(file).startsWith("_")) {
+            buildCSS(file);
+        }
+    };
+
+    /**
+     * Handles CSS file changes.
+     * @param {*} file 
+     */
+    const handleChangeCSS = (file) => {
         const filePath = path.resolve(file);
 
         if (!path.basename(file).startsWith("_")) {
             buildCSS(file);
         } else if (CSSImports[filePath]) {
             for (const exportFile in CSSImports[filePath].exports) {
-                watchCSS(exportFile);
+                handleChangeCSS(exportFile);
             }
         }
     };
@@ -251,8 +328,8 @@ const command = (argv) => {
         persistent: true,
         ignoreInitial: false
     })
-        .on("add", watchCSS)
-        .on("change", watchCSS)
+        .on("add", handleAddCSS)
+        .on("change", handleChangeCSS)
         .on("unlink", file => {
             const outName = path.join(dist, `assets/css/${path.basename(file, ".scss")}.css`);
 
@@ -272,6 +349,9 @@ const command = (argv) => {
     });
 };
 
+/**
+ * Command options.
+ */
 const options = [
     {
         name: "--src",
