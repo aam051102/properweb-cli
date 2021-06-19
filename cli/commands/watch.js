@@ -169,7 +169,6 @@ const command = (argv) => {
     };
 
     const watchJS = (file) => {
-        // TODO: Have ProperWeb Example link to this directly instead of having to republish for each test.
         // TODO: Move this to be general. No need for full paths on the other files.
 
         const fileName = path.relative(process.cwd(), file).replace(/\\/g, "/"); // Fix for ESBuild oddity.
