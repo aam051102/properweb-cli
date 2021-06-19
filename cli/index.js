@@ -11,11 +11,15 @@ const buildCommand = prog.command("build").describe("Create a production build."
 buildCommand.action(commands.build);
 
 // Watch command
-const watchCommand = prog.command("watch").describe("Watch files for changes.");
-watchCommand.action(commands.watch);
+const watchCommand = prog
+    .command("watch [src]")
+    .describe("Watch files for changes.");
+
 commands.watchOptions.forEach((option) => {
-    watchCommand.command(option.name, option.description, { default: option.default });
+    watchCommand.option(option.name, option.description, option.default);
 });
+
+watchCommand.action(commands.watch);
 
 // Process args
 prog.parse(process.argv);

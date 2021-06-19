@@ -26,7 +26,9 @@ const writeToFile = (file, content) => {
  * @param {string} src 
  * @param {string} dist 
  */
-const command = (src, dist) => {
+const command = (src, argv) => {
+    let { dist } = argv;
+
     if (src) src = path.join(process.cwd(), src);
     if (dist) dist = path.join(process.cwd(), dist);
 
@@ -272,11 +274,11 @@ const command = (src, dist) => {
 };
 
 const options = [{
-    name: "src",
+    name: "--src",
     description: "The root input directory.",
     default: "src"
 }, {
-    name: "dist",
+    name: "--dist",
     description: "The root output directory.",
     default: "dist"
 }];
