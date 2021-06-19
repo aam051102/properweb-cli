@@ -13,6 +13,9 @@ buildCommand.action(commands.build);
 // Watch command
 const watchCommand = prog.command("watch").describe("Watch files for changes.");
 watchCommand.action(commands.watch);
+commands.watchOptions.forEach((option) => {
+    watchCommand.command(option.name, option.description, { default: option.default });
+});
 
 // Process args
 prog.parse(process.argv);

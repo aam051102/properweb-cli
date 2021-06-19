@@ -1,4 +1,6 @@
-const { command: watch } = require("./watch");
+const {
+    command: watch, options: watchOptions 
+} = require("./watch");
 
 const build = () => {
 
@@ -6,5 +8,6 @@ const build = () => {
 
 module.exports = {
     build,
-    watch 
+    watch,
+    watchOptions
 };

@@ -1,9 +1,10 @@
-const esbuild = require("esbuild");
-const sass = require("sass");
-const minify = require("html-minifier").minify;
 const fs = require("fs");
 const path = require("path");
 const chokidar = require("chokidar");
+const esbuild = require("esbuild");
+const sass = require("sass");
+const minify = require("html-minifier").minify;
+const jsdom = require("jsdom");
 
 /**
  * Writes content to filepath and creates directory if it doesn't exist.
@@ -20,314 +21,266 @@ const writeToFile = (file, content) => {
     fs.writeFileSync(file, content);
 };
 
-// HTML
-const jsdom = require("jsdom");
+/**
+ * Callback function for watch command.
+ * @param {string} src 
+ * @param {string} dist 
+ */
+const command = (src, dist) => {
+    if (src) src = path.join(process.cwd(), src);
+    if (dist) dist = path.join(process.cwd(), dist);
 
-const buildHTML = (file, out) => {
-    const contents = fs.readFileSync(file, { encoding: "utf-8" });
-
-    // Build HTML/JSX modules
-    const importRegex = /<link +rel="import" *href="(.+\.jsx)" *\/?>/g;
-    let newContents = contents;
-    let importMatch;
-    while ((importMatch = importRegex.exec(contents))) {
-        const importContents = esbuild.buildSync({
-            entryPoints: [path.resolve(path.dirname(file), importMatch[1])],
-            bundle: true,
-            jsx: "transform",
-            jsxFactory: "JSX.createElement",
-            jsxFragment: "JSX.fragment",
-            write: false,
-            inject: [],
-            format: "iife",
-            globalName: "__MODULE"
-        });
-
-        const localDOM = new jsdom.JSDOM("");
-        const buildResult = new TextDecoder().decode(importContents.outputFiles[0].contents);
-        const importData = new Function("document", `${buildResult};return __MODULE;`)(localDOM.window.document);
-
-        if (importData) {
-            newContents = newContents.replace(importMatch[0], importData.default);
-        } else {
-            console.error("Module exports were not set.");
-        }
+    // Directory structure
+    if (!fs.existsSync(path.join(dist, "assets/js/"))) {
+        fs.mkdirSync(path.join(dist, "assets/js/"), { recursive: true });
     }
 
-    // Process HTML
-    const result = minify(newContents, {
-        minifyCSS: true,
-        minifyJS: true,
-        minifyURLs: true,
-        collapseWhitespace: true,
-        removeTagWhitespace: false,
-        collapseInlineTagWhitespace: false,
-        conservativeCollapse: false,
-        html5: true,
-        removeComments: true
-    });
+    if (!fs.existsSync(path.join(dist, "assets/css/"))) {
+        fs.mkdirSync(path.join(dist, "assets/css/"), { recursive: true });
+    }
 
-    writeToFile(out + path.basename(file), result);
+    // HTML
+    const buildHTML = (file, out) => {
+        const contents = fs.readFileSync(file, { encoding: "utf-8" });
 
-    console.log(`Built ${file}`);
-};
+        // Build HTML/JSX modules
+        const importRegex = /<link +rel="import" *href="(.+\.jsx)" *\/?>/g;
+        let newContents = contents;
+        let importMatch;
+        while ((importMatch = importRegex.exec(contents))) {
+            const importContents = esbuild.buildSync({
+                entryPoints: [path.resolve(path.dirname(file), importMatch[1])],
+                bundle: true,
+                jsx: "transform",
+                jsxFactory: "JSX.createElement",
+                jsxFragment: "JSX.fragment",
+                write: false,
+                inject: [],
+                format: "iife",
+                globalName: "__MODULE"
+            });
 
-// JS
-// const JSInputs = {};
-const JSImports = {};
+            const localDOM = new jsdom.JSDOM("");
+            const buildResult = new TextDecoder().decode(importContents.outputFiles[0].contents);
+            const importData = new Function("document", `${buildResult};return __MODULE;`)(localDOM.window.document);
 
-const linkJSImportsRecursive = (inputs, file) => {
-    let imports = [];
-
-    // TODO: Fix updating multiple times from several levels of imports.
-
-    // TODO: Set up changes in imports after initial import load.
-    // TODO: How to handle linking into oneself?
-    
-    inputs[file].imports.forEach((importInfo) => {
-        const importPath = importInfo.path;
-
-        /*if (JSImports[importPath]) {
-            // Don't link, but send data on
-            imports = imports.concat(JSImports[importPath].imports);
-            JSImports[importPath].exports[file] = true;
-            return;
-        }*/
-
-        // Proceed to link imports of existing import
-        imports.push(importPath);
-        const importData = imports.concat(linkJSImportsRecursive(inputs, importPath));
-        /*JSImports[importPath] = {
-            imports: importData,
-            exports: {}
-        };*/
-        JSImports[importPath] = {};
-        if (!JSImports[importPath].exports) {
-            JSImports[importPath].exports = {};
-        }
-        JSImports[importPath].exports[file] = true;
-        imports = importData;
-    });
-
-    return imports;
-};
-
-const buildJS = (file, out) => {
-    // Build
-    const data = esbuild.buildSync({
-        entryPoints: [file],
-        bundle: true,
-        outdir: out,
-        jsx: "transform",
-        jsxFactory: "JSX.createElement",
-        jsxFragment: "JSX.fragment",
-        minify: true,
-        keepNames: false,
-        inject: [],
-        sourcemap: true,
-        target: [
-            "chrome58",
-            "firefox57",
-            "safari11",
-            "edge16"
-        ],
-        metafile: true
-    });
-
-    const metafileInputs = data.metafile.inputs;
-    /*const JSInput = JSInputs[file];
-    if (JSInput) {
-        console.log(metafileInputs);
-
-        // Compare saved inputs with current inputs
-        let changeFound = false;
-
-        inputsLoop:
-        for (const fileInfo in metafileInputs) {
-            // Quick check for one-use imports.
-            if (JSInput[fileInfo]) {
-                const savedImports = JSInput[fileInfo].imports;
-                const metafileImports = metafileInputs[fileInfo].imports;
-
-                // Quick length comparison.
-                if (savedImports.length !== metafileImports.length) {
-                    changeFound = true;
-                    break inputsLoop;
-                }
-
-                // Deeper, manual check.
-                for (let i = 0; i < metafileImports.length; i++) {
-                    if (savedImports[i] !== metafileImports[i]) {
-                        changeFound = true;
-                        break inputsLoop;
-                    }
-                }
+            if (importData) {
+                newContents = newContents.replace(importMatch[0], importData.default);
             } else {
-                changeFound = true;
-                break inputsLoop;
+                console.error("Module exports were not set.");
             }
         }
 
-        if (changeFound) {
-            // Force import relink.
-            JSInputs[file] = metafileInputs;
-            delete JSImports[file];
+        // Process HTML
+        const result = minify(newContents, {
+            minifyCSS: true,
+            minifyJS: true,
+            minifyURLs: true,
+            collapseWhitespace: true,
+            removeTagWhitespace: false,
+            collapseInlineTagWhitespace: false,
+            conservativeCollapse: false,
+            html5: true,
+            removeComments: true
+        });
+
+        writeToFile(out + path.basename(file), result);
+
+        console.log(`Built "${file}"`);
+    };
+
+    const watchHTML = (file) => {
+        buildHTML(file, dist);
+    };
+
+    // JS
+    const JSImports = {};
+
+    const linkJSImportsRecursive = (inputs, file) => {
+        let imports = [];
+
+        // TODO: Fix updating multiple times from several levels of imports.
+
+        // TODO: Set up changes in imports after initial import load.
+        // TODO: How to handle linking into oneself?
+    
+        inputs[file].imports.forEach((importInfo) => {
+            const importPath = importInfo.path;
+
+            // Proceed to link imports of existing import
+            imports.push(importPath);
+            const importData = imports.concat(linkJSImportsRecursive(inputs, importPath));
+            JSImports[importPath] = {};
+            if (!JSImports[importPath].exports) {
+                JSImports[importPath].exports = {};
+            }
+            JSImports[importPath].exports[file] = true;
+            imports = importData;
+        });
+
+        return imports;
+    };
+
+    const buildJS = (file, out) => {
+        // Build
+        const data = esbuild.buildSync({
+            entryPoints: [file],
+            bundle: true,
+            outdir: out,
+            jsx: "transform",
+            jsxFactory: "JSX.createElement",
+            jsxFragment: "JSX.fragment",
+            minify: true,
+            keepNames: false,
+            inject: [],
+            sourcemap: true,
+            target: [
+                "chrome58",
+                "firefox57",
+                "safari11",
+                "edge16"
+            ],
+            metafile: true
+        });
+
+        const metafileInputs = data.metafile.inputs;
+
+        // Link imports
+        linkJSImportsRecursive(metafileInputs, file);
+
+        console.log(`Built "${file}"`);
+    };
+
+    const watchJS = (file) => {
+        const fileName = file.replace(/\\/g, "/"); // Fix for ESBuild oddity.
+
+        if (fileName.includes("js/scripts")) {
+            buildJS(fileName, path.join(dist, "assets/js/"));
+        } else if (JSImports[fileName]) {
+            for (const exportFile in JSImports[fileName].exports) {
+                watchJS(exportFile);
+            }
         }
-    } else {
-        JSInputs[file] = metafileInputs;
-    }*/
+    };
 
-    // Link imports
-    linkJSImportsRecursive(metafileInputs, file);
+    // CSS
+    const CSSImports = {};
 
-    console.log(`Built ${file}`);
-};
+    const linkCSSImports = (inputs, file) => {   
+        inputs.forEach((importPath) => {
+            // Proceed to link imports of existing import
+            CSSImports[importPath] = {};
 
-// SCSS
-const CSSImports = {};
+            if (!CSSImports[importPath].exports) {
+                CSSImports[importPath].exports = {};
+            }
 
-const linkCSSImports = (inputs, file) => {   
-    inputs.forEach((importPath) => {
-        // Proceed to link imports of existing import
-        CSSImports[importPath] = {};
-        if (!CSSImports[importPath].exports) {
-            CSSImports[importPath].exports = {};
+            CSSImports[importPath].exports[file] = true;
+        });
+    };
+
+    const buildCSS = (file, out) => {
+        const outPath = `${out + path.basename(file, ".scss")}.css`;
+
+        const result = sass.renderSync({
+            file,
+            sourceMap: true,
+            outFile: outPath,
+            outputStyle: "compressed"
+        });
+
+        linkCSSImports(result.stats.includedFiles, file);
+
+        writeToFile(outPath, result.css);
+        writeToFile(`${outPath}.map`, result.map);
+
+        console.log(`Built "${file}"`);
+    };
+
+    const watchCSS = (file) => {
+        const filePath = path.resolve(file);
+
+        if (!path.basename(file).startsWith("_")) {
+            buildCSS(file, path.join(dist, "assets/css/"));
+        } else if (CSSImports[filePath]) {
+            for (const exportFile in CSSImports[filePath].exports) {
+                watchCSS(exportFile);
+            }
         }
-        CSSImports[importPath].exports[file] = true;
-    });
-};
+    };
 
-const buildSCSS = (file, out) => {
-    const outPath = `${out + path.basename(file, ".scss")}.css`;
-
-    const result = sass.renderSync({
-        file,
-        sourceMap: true,
-        outFile: outPath,
-        outputStyle: "compressed"
-    });
-
-    //console.log(result.stats.includedFiles); // Use this property to cover import/export updates in the EXACT same way as with JSX.
-
-    linkCSSImports(result.stats.includedFiles, file);
-
-    writeToFile(outPath, result.css);
-    writeToFile(`${outPath}.map`, result.map);
-
-    console.log(`Built ${file}`);
-};
-
-// Watching
-const outDir = "./dist/";
-
-// HTML
-const watchHTML = file => {
-    buildHTML(file, `${outDir}`);
-};
-
-// JS
-const watchJS = (file) => {
-    const fileName = file.replace(/\\/g, "/"); // Fix for ESBuild oddity.
-
-    if (fileName.startsWith("src/js/scripts")) {
-        buildJS(fileName, `${outDir}assets/js/`);
-    } else if (JSImports[fileName]) {
-        for (const exportFile in JSImports[fileName].exports) {
-            watchJS(exportFile);
-        }
-    }
-};
-
-// SCSS
-const watchSCSS = file => {
-    const filePath = path.resolve(file);
-
-    if (!path.basename(file).startsWith("_")) {
-        buildSCSS(file, `${outDir}assets/css/`);
-    } else if (CSSImports[filePath]) {
-        for (const exportFile in CSSImports[filePath].exports) {
-            watchSCSS(exportFile);
-        }
-    }
-};
-
-const createDirStructure = () => {
-    // Directory structure
-    if (!fs.existsSync(`${outDir}assets/js/`)) {
-        fs.mkdirSync(`${outDir}assets/js/`, { recursive: true });
-    }
-
-    if (!fs.existsSync(`${outDir}assets/css/`)) {
-        fs.mkdirSync(`${outDir}assets/css/`, { recursive: true });
-    }
-};
-
-const command = () => {
-    createDirStructure();
-
-    // Watchers
-    const watcherHTML = chokidar.watch("./src/html/**/*.html", {
+    /// Watchers
+    // HTML
+    chokidar.watch(path.join(src, "/html/**/*.html"), {
         persistent: true,
         ignoreInitial: false
-    });
+    })
+        .on("add", watchHTML)
+        .on("change", watchHTML)
+        .on("unlink", file => {
+            const outName = path.join(dist, path.basename(file));
+
+            if (fs.existsSync(outName)) {
+                fs.rmSync(outName);
+            }
+        });
 	
-    const watcherSCSS = chokidar.watch("./src/css/**/*.scss", {
+    // JS
+    chokidar.watch([path.join(src, "/js/**/*.js"), path.join(src, "/js/**/*.jsx")], {
         persistent: true,
         ignoreInitial: false
-    });
-	
-    const watcherJS = chokidar.watch(["./src/js/**/*.js", "./src/js/**/*.jsx"], {
+    })
+        .on("add", watchJS)
+        .on("change", watchJS)
+        .on("unlink", file => {
+            // Remove output files
+            const outName = path.join(dist, `assets/js/${path.basename(file, ".jsx")}.js`);
+
+            if (fs.existsSync(outName)) {
+                fs.rmSync(outName);
+            }
+
+            if (fs.existsSync(`${outName}.map`)) {
+                fs.rmSync(`${outName}.map`);
+            }
+        });
+
+    // CSS
+    chokidar.watch(path.join(src, "/css/**/*.scss"), {
         persistent: true,
         ignoreInitial: false
-    });
+    })
+        .on("add", watchCSS)
+        .on("change", watchCSS)
+        .on("unlink", file => {
+            const outName = path.join(dist, `assets/css/${path.basename(file, ".scss")}.css`);
 
-    // Watch HTML
-    watcherHTML.on("add", watchHTML);
-    watcherHTML.on("change", watchHTML);
-    watcherHTML.on("unlink", file => {
-        const outName = outDir + path.basename(file);
-
-        if (fs.existsSync(outName)) {
-            fs.rmSync(outName);
-        }
-    });
-
-    // Watch JS
-    watcherJS.on("add", watchJS);
-    watcherJS.on("change", watchJS);
-    watcherJS.on("unlink", file => {
-    // Remove output files
-        const outName = `${outDir}assets/js/${path.basename(file, ".jsx")}.js`;
-
-        if (fs.existsSync(outName)) {
-            fs.rmSync(outName);
-        }
-
-        if (fs.existsSync(`${outName}.map`)) {
-            fs.rmSync(`${outName}.map`);
-        }
-    });
-
-    // Watch SCSS
-    watcherSCSS.on("add", watchSCSS);
-    watcherSCSS.on("change", watchSCSS);
-    watcherSCSS.on("unlink", file => {
-        const outName = `${outDir}assets/css/${path.basename(file, ".scss")}.css`;
-
-        if (fs.existsSync(outName)) {
-            fs.rmSync(outName);
-        }
-    });
+            if (fs.existsSync(outName)) {
+                fs.rmSync(outName);
+            }
+        });
 
     // Server
     const express = require("express");
     const app = express();
 
-    app.use("/", express.static(path.join(process.cwd(), "./dist/")));
+    app.use("/", express.static(dist));
 
     app.listen(3000, () => {
         console.log("Server running on port 3000.");
     });
 };
 
-module.exports = { command };
+const options = [{
+    name: "src",
+    description: "The root input directory.",
+    default: "src"
+}, {
+    name: "dist",
+    description: "The root output directory.",
+    default: "dist"
+}];
+
+module.exports = {
+    command, options 
+};
