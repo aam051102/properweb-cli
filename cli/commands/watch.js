@@ -47,8 +47,6 @@ const command = (argv) => {
     }
 
     // HTML
-    // TODO: Register and link HTML imports.
-
     /**
      * Builds HTML file.
      * @param {*} file 
@@ -61,8 +59,11 @@ const command = (argv) => {
         root.querySelectorAll("link[rel=\"import\"]").forEach((element) => {
             const importLink = element.getAttribute("href");
 
+            // Replace is a fix for ESBuild oddity.
+            const scriptPath = path.relative(process.cwd(), path.resolve(path.dirname(file), importLink)).replace(/\\/g, "/");
+
             const importContents = esbuild.buildSync({
-                entryPoints: [path.resolve(path.dirname(file), importLink)],
+                entryPoints: [scriptPath],
                 bundle: true,
                 jsx: "transform",
                 jsxFactory: "JSX.createElement",
@@ -70,8 +71,18 @@ const command = (argv) => {
                 write: false,
                 inject: [],
                 format: "iife",
-                globalName: "__MODULE"
+                globalName: "__MODULE",
+                metafile: true
             });
+
+            const metafileInputs = importContents.metafile.inputs;
+
+            if (!JSImports[scriptPath] || !JSImports[scriptPath].exports) {
+                JSImports[scriptPath] = { exports: {} };
+            }
+            JSImports[scriptPath].exports[file] = true;
+
+            linkJSImportsRecursive(metafileInputs, scriptPath);
 
             // Get dataset
             const dataset = {};
@@ -231,7 +242,11 @@ const command = (argv) => {
             buildJS(fileName);
         } else if (JSImports[fileName]) {
             for (const exportFile in JSImports[fileName].exports) {
-                handleChangeJS(exportFile);
+                if (exportFile.endsWith(".html")) {
+                    handleChangeHTML(exportFile);
+                } else {
+                    handleChangeJS(exportFile);
+                }
             }
         }
     };
