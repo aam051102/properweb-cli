@@ -34,8 +34,8 @@ const command = (argv) => {
         port
     } = argv;
 
-    if (src) src = path.join(process.cwd(), src);
-    if (dist) dist = path.join(process.cwd(), dist);
+    if (src) src = path.relative(process.cwd(), src);
+    if (dist) dist = path.relative(process.cwd(), dist);
 
     // Directory structure
     if (!fs.existsSync(path.join(dist, "assets/js/"))) {
@@ -213,7 +213,7 @@ const command = (argv) => {
      * @param {*} file 
      */
     const handleAddJS = (file) => {
-        const fileName = path.relative(process.cwd(), file).replace(/\\/g, "/"); // Fix for ESBuild oddity.
+        const fileName = file.replace(/\\/g, "/"); // Fix for ESBuild oddity.
 
         if (fileName.includes("js/scripts")) {
             buildJS(fileName);
@@ -225,7 +225,7 @@ const command = (argv) => {
      * @param {*} file 
      */
     const handleChangeJS = (file) => {
-        const fileName = path.relative(process.cwd(), file).replace(/\\/g, "/"); // Fix for ESBuild oddity.
+        const fileName = file.replace(/\\/g, "/"); // Fix for ESBuild oddity.
 
         if (fileName.includes("js/scripts")) {
             buildJS(fileName);
