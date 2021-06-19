@@ -15,7 +15,7 @@ const writeToFile = (file, content) => {
     const dir = path.dirname(file);
 
     if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
+        fs.mkdirSync(dir, { recursive: true });
     }
 
     fs.writeFileSync(file, content);
@@ -28,7 +28,9 @@ const writeToFile = (file, content) => {
  */
 const command = (argv) => {
     let {
-        src, dist 
+        src,
+        dist,
+        port
     } = argv;
 
     if (src) src = path.join(process.cwd(), src);
@@ -97,6 +99,20 @@ const command = (argv) => {
         buildHTML(file);
     };
 
+    chokidar.watch(path.join(src, "/html/**/*.html"), {
+        persistent: true,
+        ignoreInitial: false
+    })
+        .on("add", watchHTML)
+        .on("change", watchHTML)
+        .on("unlink", file => {
+            const outName = path.join(dist, path.basename(file));
+
+            if (fs.existsSync(outName)) {
+                fs.rmSync(outName);
+            }
+        });
+
     // JS
     const JSImports = {};
 
@@ -156,17 +172,39 @@ const command = (argv) => {
     };
 
     const watchJS = (file) => {
+        // TODO: Have ProperWeb Example link to this directly instead of having to republish for each test.
         // TODO: Move this to be general. No need for full paths on the other files.
+
         const fileName = path.relative(process.cwd(), file).replace(/\\/g, "/"); // Fix for ESBuild oddity.
 
         if (fileName.includes("js/scripts")) {
             buildJS(fileName);
         } else if (JSImports[fileName]) {
+            console.log(JSImports[fileName].exports);
             for (const exportFile in JSImports[fileName].exports) {
                 watchJS(exportFile);
             }
         }
     };
+
+    chokidar.watch([path.join(src, "/js/**/*.js"), path.join(src, "/js/**/*.jsx")], {
+        persistent: true,
+        ignoreInitial: false
+    })
+        .on("add", watchJS)
+        .on("change", watchJS)
+        .on("unlink", file => {
+            // Remove output files
+            const outName = path.join(dist, `assets/js/${path.basename(file, ".jsx")}.js`);
+
+            if (fs.existsSync(outName)) {
+                fs.rmSync(outName);
+            }
+
+            if (fs.existsSync(`${outName}.map`)) {
+                fs.rmSync(`${outName}.map`);
+            }
+        });
 
     // CSS
     const CSSImports = {};
@@ -214,43 +252,6 @@ const command = (argv) => {
         }
     };
 
-    /// Watchers
-    // HTML
-    chokidar.watch(path.join(src, "/html/**/*.html"), {
-        persistent: true,
-        ignoreInitial: false
-    })
-        .on("add", watchHTML)
-        .on("change", watchHTML)
-        .on("unlink", file => {
-            const outName = path.join(dist, path.basename(file));
-
-            if (fs.existsSync(outName)) {
-                fs.rmSync(outName);
-            }
-        });
-	
-    // JS
-    chokidar.watch([path.join(src, "/js/**/*.js"), path.join(src, "/js/**/*.jsx")], {
-        persistent: true,
-        ignoreInitial: false
-    })
-        .on("add", watchJS)
-        .on("change", watchJS)
-        .on("unlink", file => {
-            // Remove output files
-            const outName = path.join(dist, `assets/js/${path.basename(file, ".jsx")}.js`);
-
-            if (fs.existsSync(outName)) {
-                fs.rmSync(outName);
-            }
-
-            if (fs.existsSync(`${outName}.map`)) {
-                fs.rmSync(`${outName}.map`);
-            }
-        });
-
-    // CSS
     chokidar.watch(path.join(src, "/css/**/*.scss"), {
         persistent: true,
         ignoreInitial: false
@@ -263,7 +264,7 @@ const command = (argv) => {
             if (fs.existsSync(outName)) {
                 fs.rmSync(outName);
             }
-        });
+        });    
 
     // Server
     const express = require("express");
@@ -271,20 +272,28 @@ const command = (argv) => {
 
     app.use("/", express.static(dist));
 
-    app.listen(3000, () => {
-        console.log("Server running on port 3000.");
+    app.listen(port, () => {
+        console.log(`Server running on http://localhost:${port}`);
     });
 };
 
-const options = [{
-    name: "--src",
-    description: "The root input directory.",
-    default: "src"
-}, {
-    name: "--dist",
-    description: "The root output directory.",
-    default: "dist"
-}];
+const options = [
+    {
+        name: "--src",
+        description: "The root input directory.",
+        default: "src"
+    },
+    {
+        name: "--dist",
+        description: "The root output directory.",
+        default: "dist"
+    },
+    {
+        name: "--port",
+        description: "The port to serve the dist folder on.",
+        default: "3000"
+    }
+];
 
 module.exports = {
     command, options 
