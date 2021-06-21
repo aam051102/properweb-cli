@@ -7,28 +7,13 @@ const minify = require("html-minifier").minify;
 const jsdom = require("jsdom");
 const { JSX } = require("properweb");
 const { parse: parseHTML } = require("node-html-parser");
+const { writeToFile } = require("cli/utils");
 
 const shimPathJSX = path.join(__dirname, "..", "jsx-shim.js");
 
 /**
- * Writes content to filepath and creates directory if it doesn't exist.
- * @param {string} file
- * @param {string} content
- */
-const writeToFile = (file, content) => {
-    const dir = path.dirname(file);
-
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
-
-    fs.writeFileSync(file, content);
-};
-
-/**
  * Callback function for watch command.
- * @param {string} src 
- * @param {string} dist 
+ * @param {*} argv
  */
 const command = (argv) => {
     let {
