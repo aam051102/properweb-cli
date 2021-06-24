@@ -4,7 +4,6 @@ const chokidar = require("chokidar");
 const esbuild = require("esbuild");
 const sass = require("sass");
 const minify = require("html-minifier").minify;
-const jsdom = require("jsdom");
 const Proper = require("properweb");
 const { parse: parseHTML } = require("node-html-parser");
 const {
@@ -78,9 +77,8 @@ const command = (argv) => {
             }
 
             // TODO: This is too much of a workaround. Find a better solution.
-            const localDOM = new jsdom.JSDOM("");
             const buildResult = new TextDecoder().decode(importContents.outputFiles[0].contents);
-            const moduleFunction = new Function("document", `${buildResult};return __MODULE;`)(localDOM.window.document).default;
+            const moduleFunction = new Function(`${buildResult};return __MODULE;`)().default;
 
             if (!moduleFunction) {
                 console.error("Module exports were not set.");
