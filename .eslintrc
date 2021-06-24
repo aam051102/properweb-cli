@@ -29,7 +29,7 @@
 		"project": "jsconfig.json"
     },
 	"globals": {
-		"React": "writable"
+		
 	},
     "rules": {
         "react/prop-types": [ "off" ],

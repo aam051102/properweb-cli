@@ -16,4 +16,24 @@ const writeToFile = (file, content) => {
     fs.writeFileSync(file, content);
 };
 
-export { writeToFile };
+/**
+ * 
+ * @param {string} dist 
+ * @param {string} outjs 
+ * @param {string} outcss 
+ */
+const createFileStructure = (dist, outjs, outcss) => {
+    fs.mkdirSync(dist, { recursive: true });
+
+    if (!fs.existsSync(path.join(dist, outjs))) {
+        fs.mkdirSync(path.join(dist, outjs), { recursive: true });
+    }
+
+    if (!fs.existsSync(path.join(dist, outcss))) {
+        fs.mkdirSync(path.join(dist, outcss), { recursive: true });
+    }
+};
+
+module.exports = {
+    writeToFile, createFileStructure 
+};

@@ -1,3 +1,3 @@
-import { JSX } from "properweb";
+import * as Proper from "properweb";
 
-export { JSX };
+export { Proper };

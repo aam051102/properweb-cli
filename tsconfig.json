@@ -8,7 +8,9 @@
 			"DOM.Iterable",
 			"ESNext",
 		],
-		"noImplicitAny": false
+		"noEmit": true,
+		"noImplicitAny": false,
+		"allowJs": true,
 	},
 	"include": [
 		"./**/*.js",

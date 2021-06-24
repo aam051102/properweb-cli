@@ -5,9 +5,11 @@ const esbuild = require("esbuild");
 const sass = require("sass");
 const minify = require("html-minifier").minify;
 const jsdom = require("jsdom");
-const { JSX } = require("properweb");
+const Proper = require("properweb");
 const { parse: parseHTML } = require("node-html-parser");
-const { writeToFile } = require("cli/utils");
+const {
+    writeToFile, createFileStructure 
+} = require("../utils");
 
 const shimPathJSX = path.join(__dirname, "..", "jsx-shim.js");
 
@@ -19,20 +21,15 @@ const command = (argv) => {
     let {
         src,
         dist,
-        port
+        port,
+        outcss,
+        outjs
     } = argv;
 
     if (src) src = path.relative(process.cwd(), src);
     if (dist) dist = path.relative(process.cwd(), dist);
 
-    // Directory structure
-    if (!fs.existsSync(path.join(dist, "assets/js/"))) {
-        fs.mkdirSync(path.join(dist, "assets/js/"), { recursive: true });
-    }
-
-    if (!fs.existsSync(path.join(dist, "assets/css/"))) {
-        fs.mkdirSync(path.join(dist, "assets/css/"), { recursive: true });
-    }
+    createFileStructure(dist, outjs, outcss);
 
     // HTML
     /**
@@ -54,8 +51,8 @@ const command = (argv) => {
                 entryPoints: [scriptPath],
                 bundle: true,
                 jsx: "transform",
-                jsxFactory: "JSX.createElement",
-                jsxFragment: "JSX.fragment",
+                jsxFactory: "Proper.createElement",
+                jsxFragment: "Proper.fragment",
                 write: false,
                 inject: [shimPathJSX],
                 format: "iife",
@@ -80,7 +77,6 @@ const command = (argv) => {
                 }
             }
 
-            // TODO: Find a way to send element data/args to import.
             // TODO: This is too much of a workaround. Find a better solution.
             const localDOM = new jsdom.JSDOM("");
             const buildResult = new TextDecoder().decode(importContents.outputFiles[0].contents);
@@ -92,9 +88,9 @@ const command = (argv) => {
             }
             
             let importData = moduleFunction(dataset);
-
+            
             if (typeof importData != "string") {
-                importData = JSX.renderToString(importData);
+                importData = Proper.renderToString(importData);
             }
 
             element.replaceWith(importData);
@@ -188,10 +184,10 @@ const command = (argv) => {
         const data = esbuild.buildSync({
             entryPoints: [file],
             bundle: true,
-            outdir: path.join(dist, "assets/js/"),
+            outdir: path.join(dist, outjs),
             jsx: "transform",
-            jsxFactory: "JSX.createElement",
-            jsxFragment: "JSX.fragment",
+            jsxFactory: "Proper.createElement",
+            jsxFragment: "Proper.fragment",
             minify: true,
             keepNames: false,
             inject: [shimPathJSX],
@@ -245,7 +241,12 @@ const command = (argv) => {
         }
     };
 
-    chokidar.watch([path.join(src, "/js/**/*.js"), path.join(src, "/js/**/*.jsx")], {
+    chokidar.watch([
+        path.join(src, "/js/**/*.js"),
+        path.join(src, "/js/**/*.jsx"),
+        path.join(src, "/js/**/*.ts"),
+        path.join(src, "/js/**/*.tsx")
+    ], {
         persistent: true,
         ignoreInitial: false
     })
@@ -253,7 +254,7 @@ const command = (argv) => {
         .on("change", handleChangeJS)
         .on("unlink", file => {
             // Remove output files
-            const outName = path.join(dist, `assets/js/${path.basename(file, ".jsx")}.js`);
+            const outName = path.join(dist, outjs, `${path.basename(file, ".jsx")}.js`);
 
             if (fs.existsSync(outName)) {
                 fs.rmSync(outName);
@@ -290,7 +291,7 @@ const command = (argv) => {
      * @param {*} file 
      */
     const buildCSS = (file) => {
-        const outPath = path.join(dist, `assets/css/${path.basename(file, ".scss")}.css`);
+        const outPath = path.join(dist, outcss, `${path.basename(file, ".scss")}.css`);
 
         const result = sass.renderSync({
             file,
@@ -340,7 +341,7 @@ const command = (argv) => {
         .on("add", handleAddCSS)
         .on("change", handleChangeCSS)
         .on("unlink", file => {
-            const outName = path.join(dist, `assets/css/${path.basename(file, ".scss")}.css`);
+            const outName = path.join(dist, outcss, `${path.basename(file, ".scss")}.css`);
 
             if (fs.existsSync(outName)) {
                 fs.rmSync(outName);
@@ -376,6 +377,16 @@ const options = [
         name: "--port",
         description: "The port to serve the dist folder on.",
         default: "3000"
+    },
+    {
+        name: "--outcss",
+        description: "The output directory for CSS, relative to the root output directory.",
+        default: "assets/css/"
+    },
+    {
+        name: "--outjs",
+        description: "The output directory for JS, relative to the root output directory.",
+        default: "assets/js/"
     }
 ];
 
