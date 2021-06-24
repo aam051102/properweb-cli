@@ -1,3 +1,6 @@
 import * as Proper from "properweb";
 
-export { Proper };
+export {
+    Proper,
+    Proper as P 
+};
