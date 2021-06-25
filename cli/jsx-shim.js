@@ -1,4 +1,4 @@
-import * as Proper from "properweb";
+import { Proper } from "properweb";
 
 export {
     Proper,

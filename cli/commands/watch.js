@@ -4,7 +4,7 @@ const chokidar = require("chokidar");
 const esbuild = require("esbuild");
 const sass = require("sass");
 const minify = require("html-minifier").minify;
-const Proper = require("properweb");
+const { Proper } = require("properweb");
 const { parse: parseHTML } = require("node-html-parser");
 const {
     writeToFile, createFileStructure 
@@ -36,7 +36,7 @@ const command = (argv) => {
      * @param {*} file 
      */
     const buildHTML = (file) => {
-        const contents = fs.readFileSync(file, { encoding: "utf-8" });
+        const contents = fs.readFileSync(path.relative(process.cwd(), file), { encoding: "utf-8" });
 
         const root = parseHTML(contents);
 
