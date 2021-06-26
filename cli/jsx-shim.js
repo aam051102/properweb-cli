@@ -1,6 +1,7 @@
-import { Proper } from "properweb";
+import {
+    Proper, P
+} from "properweb";
 
 export {
-    Proper,
-    Proper as P 
+    Proper, P 
 };
