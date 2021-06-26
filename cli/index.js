@@ -7,7 +7,14 @@ const commands = require("./commands");
 let prog = sade("proper").version(pkg.version);
 
 // Build command
-const buildCommand = prog.command("build").describe("Create a production build.");
+const buildCommand = prog
+    .command("build")
+    .describe("Create a production build.");
+    
+commands.buildOptions.forEach((option) => {
+    buildCommand.option(option.name, option.description, option.default);
+});
+
 buildCommand.action(commands.build);
 
 // Watch command

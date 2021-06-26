@@ -1,68 +1,18 @@
 {
     "extends": [
-        "eslint:recommended",
-        "plugin:react/recommended",
-        "plugin:react-hooks/recommended"
-    ],
-    "plugins": [
-        //"@typescript-eslint",
-		"react",
-		"react-hooks"
+        "eslint:recommended"
     ],
     "env": {
         "es6": true,
         "node": true,
         "browser": true
     },
-    "settings": {
-		"react": {
-			"version": "detect"
-		}
-	},
-	//"parser": "@typescript-eslint/parser",
 	"parserOptions": {
         "ecmaVersion": 2020,
         "sourceType": "module",
-        "ecmaFeatures": {
-            "jsx": true
-        },
-		"project": "jsconfig.json"
+		"project": "tsconfig.json"
     },
-	"globals": {
-		
-	},
     "rules": {
-        "react/prop-types": [ "off" ],
-        "react/jsx-tag-spacing": [ "warn", {
-            "closingSlash": "never",
-            "beforeSelfClosing": "always",
-            "afterOpening": "never",
-            "beforeClosing": "never"
-        }],
-        "react/jsx-indent": [
-            "warn",
-            4,
-            {
-                "checkAttributes": false,
-                "indentLogicalExpressions": true
-            }
-        ],
-        "react/jsx-indent-props": [
-            "warn",
-            4
-        ],
-        "react/jsx-wrap-multilines": ["warn", {
-            "declaration": "parens-new-line",
-            "assignment": "parens-new-line",
-            "return": "parens-new-line",
-            "arrow": "parens-new-line",
-            "condition": "parens-new-line",
-            "logical": "parens-new-line",
-            "prop": "parens-new-line"
-        }],
-        "react/jsx-first-prop-new-line": ["warn", "multiline"],
-        "react/jsx-max-props-per-line": [1, { "maximum": 1 }],
-
         "lines-between-class-members": "warn",
         "no-multiple-empty-lines": [
 			"warn",
@@ -114,13 +64,15 @@
             "functions": "never"
         }],
         "padding-line-between-statements": ["warn",
-            { "blankLine": "always", "prev": "*", "next": ["export", "function"] }
+            { "blankLine": "always", "prev": [ "multiline-block-like" ], "next": ["export", "function"] }
         ],
         "padded-blocks": ["warn", "never"],
-        "object-curly-newline":[ "warn", { "minProperties": 2 } ],
-        "array-element-newline" : [ "warn", { "minItems": 3 } ],
-        "array-bracket-newline": [ "warn", { "minItems": 3 } ],
-        "array-bracket-spacing": [ "warn", "never"],
+        "newline-per-chained-call": "warn",
+        "object-property-newline": "warn",
+        "object-curly-newline": ["warn", { "minProperties": 2 }],
+        "array-element-newline" : ["warn", { "minItems": 3 }],
+        "array-bracket-newline": ["warn", { "minItems": 3 }],
+        "array-bracket-spacing": ["warn", "never"],
         "multiline-ternary": ["warn", "never"],
         "quotes": [ "warn", "double" ]
 	}

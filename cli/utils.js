@@ -35,5 +35,6 @@ const createFileStructure = (dist, outjs, outcss) => {
 };
 
 module.exports = {
-    writeToFile, createFileStructure 
+    writeToFile,
+    createFileStructure 
 };

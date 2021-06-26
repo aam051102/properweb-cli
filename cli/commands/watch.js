@@ -3,7 +3,6 @@ const path = require("path");
 const chokidar = require("chokidar");
 const esbuild = require("esbuild");
 const sass = require("sass");
-const minify = require("html-minifier").minify;
 const { Proper } = require("properweb");
 const { parse: parseHTML } = require("node-html-parser");
 const {
@@ -95,17 +94,7 @@ const command = (argv) => {
         });
 
         // Process HTML
-        const result = minify(root.toString(), {
-            minifyCSS: true,
-            minifyJS: true,
-            minifyURLs: true,
-            collapseWhitespace: true,
-            removeTagWhitespace: false,
-            collapseInlineTagWhitespace: false,
-            conservativeCollapse: false,
-            html5: true,
-            removeComments: true
-        });
+        const result = root.toString();
 
         writeToFile(path.join(dist, path.basename(file)), result);
 
@@ -186,8 +175,8 @@ const command = (argv) => {
             jsx: "transform",
             jsxFactory: "Proper.createElement",
             jsxFragment: "Proper.fragment",
-            minify: true,
-            keepNames: false,
+            minify: false,
+            keepNames: true,
             inject: [shimPathJSX],
             sourcemap: true,
             target: [
@@ -295,7 +284,7 @@ const command = (argv) => {
             file,
             sourceMap: true,
             outFile: outPath,
-            outputStyle: "compressed"
+            outputStyle: "expanded"
         });
 
         linkCSSImports(result.stats.includedFiles, file);
@@ -389,5 +378,6 @@ const options = [
 ];
 
 module.exports = {
-    command, options 
+    command,
+    options 
 };
